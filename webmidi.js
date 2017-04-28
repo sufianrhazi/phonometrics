@@ -7,6 +7,41 @@
         exportEl.textContent = JSON.stringify(midiMessages);
         midiMessages = [];
     });
+    var expectingRelease = false;
+    function addMidiMessage(timestamp, data) {
+        if (data[0] == 0x90 && data[1] == 0x40) {
+            // My Kawai CN 190 has a hardware problem, where
+            // *sometimes* it unintentionally turns the bit 6 of the midi
+            // function off in midi out, so 
+            // 0xb0 (10110000) (Control Change) gets turned into
+            // 0x90 (10010000) (Note On)
+            //
+            // The only Control Change emitted by my piano is the damper
+            // (sustain) pedal, which means instead of adding a lovely wash
+            // of sustained notes over the music, it plays the E above middle C
+            // at MAXIMUM VELOCITY.
+            if (data[2] == 0x7f) {
+                // I probably won't ever play that E at max velocity, but if I
+                // do, *bad things* will happen
+                data[0] = 0xb0;
+            } else if (data[2] == 0x00) {
+                if (!expectingRelease) {
+                    data[0] = 0xb0; // My piano is *the worst*
+                }
+                expectingRelease = false;
+            } else {
+                expectingRelease = true;
+            }
+        }
+        if (data[0] == 0x90 && data[1] == 0x40 && data[2] == 0x7f) {
+            data[0] = 0xb0;
+        }
+        midiMessages.push({
+            ms: Math.trunc(timestamp),
+            us: Math.round((timestamp - Math.trunc(timestamp)) * 1000),
+            data: Array.from(event.data)
+        });
+    }
 
     var startEl = document.getElementById('start');
     startEl.addEventListener('click', function () {
@@ -83,11 +118,7 @@
                         timestamp = event.timeStamp;
                     }
                     var portStr = fmtPort(inputPort);
-                    midiMessages.push({
-                        ms: Math.trunc(timestamp),
-                        us: Math.round((timestamp - Math.trunc(timestamp)) * 1000),
-                        data: Array.from(event.data)
-                    });
+                    addMidiMessage(timestamp, Array.from(event.data));
                     var midiData = fmtData(event.data);
                     log(`${portStr} ${midiData} @${timestamp}`, true);
                 }
