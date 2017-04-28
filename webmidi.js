@@ -7,6 +7,16 @@
         exportEl.textContent = JSON.stringify(midiMessages);
         midiMessages = [];
     });
+    var startEl = document.getElementById('start');
+    startEl.addEventListener('click', function () {
+        startEl.disabled = true;
+        start();
+    });
+    var playEl = document.getElementById('play');
+    playEl.addEventListener('click', function () {
+        var toOutput = JSON.parse(exportEl.value);
+        play(toOutput);
+    });
 
     var logEl = document.getElementById('log');
     function log(msg, isDebug) {
@@ -14,7 +24,6 @@
             logEl.textContent = msg + '\n' + logEl.textContent;
         }
     }
-    log('Requesting MIDI Access (without sysex)...');
 
     function fmtData(data) {
         var str = '';
@@ -58,6 +67,7 @@
             .then(function () {
                 listening.add(inputPort);
                 inputPort.onmidimessage = function (event) {
+                    console.log(event);
                     var timestamp = event.receivedTime;
                     if (timestamp === undefined) {
                         // receivedTime is not set on Chrome, as DOM Event timestamps are high resolution: https://bugs.chromium.org/p/chromium/issues/detail?id=599335
@@ -78,33 +88,102 @@
             });
     }
 
-    navigator.requestMIDIAccess({ sysex: false })
-        .then(function (midiAccess) {
-            log('Obtained MIDI access');
-            log('# inputs: ' + midiAccess.inputs.size);
-            midiAccess.inputs.forEach(function (inputPort) {
-                logPort(inputPort, 'Found');
+    function initialize(onInput, onOutput) {
+        log('Requesting MIDI Access (without sysex)...');
+        return navigator.requestMIDIAccess({ sysex: false })
+            .then(function (midiAccess) {
+                log('Obtained MIDI access');
+                log('# inputs: ' + midiAccess.inputs.size);
+                midiAccess.inputs.forEach(function (inputPort) {
+                    logPort(inputPort, 'Found');
+                    onInput(inputPort, true);
+                });
+                log('# outputs: ' + midiAccess.outputs.size);
+                midiAccess.outputs.forEach(function (outputPort) {
+                    logPort(outputPort, 'Found');
+                    onOutput(outputPort, true);
+                });
+                midiAccess.onstatechange = function (event) {
+                    logPort(event.port, 'Discovered');
+                    if (event.port.state === 'disconnected') {
+                        if (event.port.type === 'input') {
+                            onInput(event.port, false);
+                        } else if (event.port.type === 'output') {
+                            onOutput(event.port, false);
+                        }
+                    } else if (event.port.state === 'connected') {
+                        if (event.port.type === 'input') {
+                            onInput(event.port, true);
+                        } else if (event.port.type === 'output') {
+                            onOutput(event.port, true);
+                        }
+                    }
+                };
+            }, function (e) {
+                log('MIDI access denied');
+                log(e.toString());
+                throw e;
+            });
+    }
+
+    function start() {
+        initialize(function (inputPort, isConnected) {
+            if (isConnected) {
                 listenForEvents(inputPort);
-            });
-            log('# outputs: ' + midiAccess.outputs.size);
-            midiAccess.outputs.forEach(function (outputPort) {
-                logPort(outputPort, 'Found');
-            });
-            midiAccess.onstatechange = function (event) {
-                logPort(event.port, 'Discovered');
-                if (event.port.state === 'disconnected') {
-                    if (event.port.type === 'input') {
-                        stopListeningOn(event.port);
-                    }
-                } else if (event.port.state === 'connected') {
-                    if (event.port.type === 'input') {
-                        listenForEvents(event.port);
-                    }
-                }
-            };
-        }, function (e) {
-            log('MIDI access denied');
-            log(e.toString());
-            throw e;
+            } else {
+                stopListeningOn(inputPort);
+            }
+        }, function (outputPort, isConnected) {
         });
+    }
+
+    function play(messages) {
+        var firstOutputPort = null;
+        var timeoutHandle = null;
+        var startTime = null;
+        var lastIndex = null;
+        initialize(function (inputPort, isConnected) {
+        }, function (outputPort, isConnected) {
+            if (isConnected) {
+                if (firstOutputPort === null) {
+                    firstOutputPort = outputPort;
+                    firstOutputPort.open()
+                        .then(function () {
+                            startTime = performance.now();
+                            lastIndex = 0;
+                            update();
+                        });
+                }
+            } else {
+                if (firstOutputPort === outputPort) {
+                    clearTimeout(timeoutHandle);
+                    timeoutHandle = null;
+                }
+            }
+        });
+
+        function update() {
+            var firstMessageTime = (messages[0].ms * 1000 + messages[0].us) / 1000;
+            var now = performance.now();
+            var delta = now - startTime;
+            var toSend = [];
+            for (var i = lastIndex; i < messages.length; ++i) {
+                var messageDelta = ((messages[i].ms * 1000 + messages[i].us) / 1000) - firstMessageTime;
+                if (messageDelta < delta + 200) {
+                    toSend.push({
+                        data: messages[i].data,
+                        when: messageDelta - delta
+                    });
+                    lastIndex = i + 1;
+                }
+            }
+            log('Sending ' + JSON.stringify(toSend));
+            toSend.forEach(function (message) {
+                firstOutputPort.send(message.data, now + message.when);
+            });
+            if (lastIndex < messages.length - 1) {
+                timeoutHandle = setTimeout(update, 100);
+            }
+        }
+    }
 }());
