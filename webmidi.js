@@ -7,15 +7,25 @@
         exportEl.textContent = JSON.stringify(midiMessages);
         midiMessages = [];
     });
+
     var startEl = document.getElementById('start');
     startEl.addEventListener('click', function () {
         startEl.disabled = true;
         start();
     });
+
     var playEl = document.getElementById('play');
     playEl.addEventListener('click', function () {
         var toOutput = JSON.parse(exportEl.value);
         play(toOutput);
+    });
+
+    var playEl = document.getElementById('play-software');
+    playEl.addEventListener('click', function () {
+        var toOutput = JSON.parse(exportEl.value);
+        var audioContext = new AudioContext();
+        var fakeMidi = new FakeMidiPort(audioContext);
+        play(toOutput, fakeMidi);
     });
 
     var logEl = document.getElementById('log');
@@ -67,7 +77,6 @@
             .then(function () {
                 listening.add(inputPort);
                 inputPort.onmidimessage = function (event) {
-                    console.log(event);
                     var timestamp = event.receivedTime;
                     if (timestamp === undefined) {
                         // receivedTime is not set on Chrome, as DOM Event timestamps are high resolution: https://bugs.chromium.org/p/chromium/issues/detail?id=599335
@@ -137,11 +146,23 @@
         });
     }
 
-    function play(messages) {
+    function play(messages, fakePort) {
         var firstOutputPort = null;
         var timeoutHandle = null;
         var startTime = null;
         var lastIndex = null;
+
+        if (fakePort) { // TODO: refactor so this is less gross
+            firstOutputPort = fakePort;
+            firstOutputPort.open()
+                .then(function () {
+                    startTime = performance.now();
+                    lastIndex = 0;
+                    update();
+                });
+            return;
+        }
+
         initialize(function (inputPort, isConnected) {
         }, function (outputPort, isConnected) {
             if (isConnected) {
@@ -166,6 +187,7 @@
             var firstMessageTime = (messages[0].ms * 1000 + messages[0].us) / 1000;
             var now = performance.now();
             var delta = now - startTime;
+            log('At ' + delta);
             var toSend = [];
             for (var i = lastIndex; i < messages.length; ++i) {
                 var messageDelta = ((messages[i].ms * 1000 + messages[i].us) / 1000) - firstMessageTime;

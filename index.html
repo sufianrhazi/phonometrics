@@ -6,11 +6,13 @@
     <body>
         <button id="start">Start</button>
         <button id="save">Save &amp; Clear</button>
-        <button id="play">Play</button>
+        <button id="play">Play to hardware MIDI</button>
+        <button id="play-software">Play to software MIDI</button>
         <hr />
         <textarea id="export" cols="80"></textarea>
         <hr />
         <pre rows="50" cols="80" id="log"></pre>
+        <script src="fakemidi.js"></script>
         <script src="webmidi.js"></script>
     </body>
 </html>
