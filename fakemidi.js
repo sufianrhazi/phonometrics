@@ -10,10 +10,16 @@
         return ((hi - low) * val) + low;
     }
 
+    function midiVelocityToGain(velocity) {
+        return Math.pow(10, (velocity / 127) - 1);
+    }
+
     function Synth(audioContext) {
         var private = {
             audioContext: audioContext,
-            keyNotes: new Map(), // key to [{ active, oscillator, gain }]
+            keyNotes: new Map(), // key to [{ onTime, offTime, oscillator, gain }]
+            sustainStart: Infinity,
+            sustainStop: Infinity,
         };
         privates.set(this, private);
     }
@@ -30,12 +36,48 @@
         off: function (midiNote, when) {
             var private = privates.get(this);
             var notes = this._getNotes(midiNote);
-            notes.forEach(function (note) {
-                note.active = false;
-                note.oscillator.stop(when);
-            });
-            notes.length = 0; // TODO this is gross
+            if (when < private.sustainStart || when >= private.sustainStop) {
+                notes.forEach(function (note) {
+                    note.offTime = when;
+                    note.gain.gain.exponentialRampToValueAtTime(0.01, when + 0.1);
+                    note.gain.gain.linearRampToValueAtTime(0, when + 0.15);
+                    note.oscillator.stop(when + 0.15);
+                });
+                notes.length = 0; // TODO this is gross
+            } else {
+                notes.forEach(function (note) {
+                    note.offTime = when;
+                });
+            }
             // TODO: do I need to garbage collect the stopped oscillator and gain from the graph?
+        },
+        sustainOn: function (timestamp) {
+            var private = privates.get(this);
+            private.sustainStart = timestamp;
+        },
+        sustainOff: function (timestamp) {
+            var private = privates.get(this);
+            private.sustainStop = timestamp;
+            Array.from(private.keyNotes.entries()).forEach(function (entry) {
+                var midiNote = entry[0];
+                var notes = entry[1];
+                // remove an item from an array
+                var i = 0;
+                var len = notes.length;
+                while (i < len) {
+                    var note = notes[i];
+                    if (note.offTime < timestamp) {
+                        note.oscillator.stop(timestamp); // TODO: this is copy-pasted
+                        note.gain.gain.exponentialRampToValueAtTime(0.01, timestamp + 0.1);
+                        note.gain.gain.linearRampToValueAtTime(0, timestamp + 0.15);
+                        note.oscillator.stop(timestamp + 0.15);
+                        notes[i] = notes[len - 1]; // NOTE: THIS DOES NOT PRESERVE ORDER
+                        len--;
+                    }
+                    i += 1;
+                }
+                notes.length = len;
+            });
         },
         on: function (midiNote, velocity, when) {
             var private = privates.get(this);
@@ -44,17 +86,22 @@
                 this.off(midiNote, when);
             } else {
                 var note = {
-                    active: true,
+                    onTime: when,
+                    offTime: Infinity,
                     oscillator: private.audioContext.createOscillator(),
                     gain: private.audioContext.createGain(),
                 };
+                note.oscillator.type = 'triangle';
                 note.oscillator.frequency.setValueAtTime(midiFrequency(midiNote), private.audioContext.currentTime);
-                note.gain.gain.setValueAtTime(velocity / 127, private.audioContext.currentTime);
+                // TODO: make a better envelope
+                note.gain.gain.setValueAtTime(0, private.audioContext.currentTime);
+                var gain = midiVelocityToGain(velocity);
+                note.gain.gain.linearRampToValueAtTime(gain, private.audioContext.currentTime + 0.02);
+                note.gain.gain.linearRampToValueAtTime(0.8 * gain, private.audioContext.currentTime + 0.02 + 0.02);
+                note.gain.gain.exponentialRampToValueAtTime(0.01, private.audioContext.currentTime + 0.02 + 0.02 + 10);
                 note.oscillator.connect(note.gain);
                 note.gain.connect(private.audioContext.destination);
                 note.oscillator.start(when);
-                console.log(private.audioContext.currentTime, when);
-                console.log(note, midiFrequency(midiNote));
                 notes.push(note);
             }
         }
@@ -174,10 +221,10 @@
                         case 0x40: // Damper Petal
                             switch (data[2]) {
                                 case 0:
-                                    console.warn('Imagine the damper is down');
+                                    private.synth.sustainOff(timestamp);
                                     break;
                                 case 127:
-                                    console.warn('Imagine the damper is up');
+                                    private.synth.sustainOn(timestamp);
                                     break;
                                 default:
                                     console.warn("Ignoring unknown MIDI data", data);

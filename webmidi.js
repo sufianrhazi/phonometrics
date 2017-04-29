@@ -7,39 +7,49 @@
         exportEl.textContent = JSON.stringify(midiMessages);
         midiMessages = [];
     });
-    var expectingRelease = false;
+    var isEPlaying = false;
+    var isSustainActive = false;
     function addMidiMessage(timestamp, data) {
-        if (data[0] == 0x90 && data[1] == 0x40) {
-            // My Kawai CN 190 has a hardware problem, where
-            // *sometimes* it unintentionally turns the bit 6 of the midi
-            // function off in midi out, so 
-            // 0xb0 (10110000) (Control Change) gets turned into
-            // 0x90 (10010000) (Note On)
-            //
-            // The only Control Change emitted by my piano is the damper
-            // (sustain) pedal, which means instead of adding a lovely wash
-            // of sustained notes over the music, it plays the E above middle C
-            // at MAXIMUM VELOCITY.
-            if (data[2] == 0x7f) {
-                // I probably won't ever play that E at max velocity, but if I
-                // do, *bad things* will happen
-                data[0] = 0xb0;
-            } else if (data[2] == 0x00) {
-                if (!expectingRelease) {
-                    data[0] = 0xb0; // My piano is *the worst*
+        if (data.length == 1 && data[0] == 0xfe) {
+            // Active Sensing is useless
+            return;
+        }
+
+        if ((data[0] == 0x90 || data[0] == 0xb0) && data[1] == 0x40) {
+            if (data[2] == 0x00) {
+                // If we're not playing a key, and sustain is active, it's a pedal release
+                if (!isEPlaying && isSustainActive) {
+                    data[0] = 0xb0;
+                    isSustainActive = false;
                 }
-                expectingRelease = false;
+                if (isEPlaying && data[0] == 0x90) {
+                    isEPlaying = false;
+                }
+            } else if (data[2] == 0x7f) {
+                if (isEPlaying) {
+                    // Definitely a sustain
+                    log('Adjusting false key press to sustain pedal down');
+                    isSustainActive = true;
+                    data[0] = 0xb0;
+                } else {
+                    log('Possibly incorrectly adjusting false key press to sustain pedal down');
+                    // Most likely this is a sustain
+                    isSustainActive = true;
+                    data[0] = 0xb0;
+                }
             } else {
-                expectingRelease = true;
+                if (data[0] == 0xb0) {
+                    throw new Error("Woah there, there's another hardware bug!");
+                }
+                // We're playing a key
+                isEPlaying = true;
             }
         }
-        if (data[0] == 0x90 && data[1] == 0x40 && data[2] == 0x7f) {
-            data[0] = 0xb0;
-        }
+        log('Message: ' + JSON.stringify(Array.from(data)) + ' ' + timestamp);
         midiMessages.push({
             ms: Math.trunc(timestamp),
             us: Math.round((timestamp - Math.trunc(timestamp)) * 1000),
-            data: Array.from(event.data)
+            data: Array.from(data)
         });
     }
 
