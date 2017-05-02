@@ -1,0 +1,13 @@
+{
+    "compilerOptions": {
+        "module": "commonjs",
+        "target": "es2016",
+        "noImplicitAny": true,
+        "outDir": "build/tsc/",
+        "sourceRoot": "src",
+        "strict": true,
+        "inlineSourceMap": true,
+        "lib": ["es2015","dom"],
+        "jsx": "react"
+    }
+}
