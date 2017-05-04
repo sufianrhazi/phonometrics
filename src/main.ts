@@ -2,18 +2,13 @@
 
 import { FakeMidiPort } from "./fakemidi";
 import { MidiMessages } from "./MidiMessages";
+import { Logger } from "./Logger";
 import { domOne, domAll } from "./tquery";
 import { render } from "./App";
 
 render(domOne(HTMLElement, "#react-start"));
 
-var IS_DEBUG = false;
-var logEl = domOne(HTMLElement, '#log');
-function log(msg: string, isImportant: boolean=false): void {
-    if (isImportant || IS_DEBUG) {
-        logEl.textContent = msg + '\n' + logEl.textContent;
-    }
-}
+var logger = new Logger(domOne(HTMLElement, '#log'));
 
 var midiMessages = new MidiMessages();
 
@@ -69,7 +64,7 @@ function logPort(port: MIDIPort, msg: string) {
         msg += ' ';
     }
     var portStr = fmtPort(port);
-    log(`${msg}${portStr}: ${port.state},${port.connection}`);
+    logger.log(`${msg}${portStr}: ${port.state},${port.connection}`);
 }
 
 var listening = new Set();
@@ -96,7 +91,7 @@ function listenForEvents(inputPort: MIDIInput) {
                 var portStr = fmtPort(inputPort);
                 midiMessages.add(timestamp, event.data);
                 var midiData = fmtData(event.data);
-                log(`${portStr} ${midiData} @${timestamp}`, true);
+                logger.log(`${portStr} ${midiData} @${timestamp}`, true);
                 return false;
             }
         })
@@ -109,16 +104,16 @@ type InputHandler = (port: MIDIInput, isConnected: boolean) => void;
 type OutputHandler = (port: MIDIOutput, isConnected: boolean) => void;
 
 function initialize(onInput: InputHandler, onOutput: OutputHandler): Promise<void> {
-    log('Requesting MIDI Access (without sysex)...');
+    logger.log('Requesting MIDI Access (without sysex)...');
     return navigator.requestMIDIAccess({ sysex: false })
         .then(function (midiAccess) {
-            log('Obtained MIDI access');
-            log('# inputs: ' + midiAccess.inputs.size);
+            logger.log('Obtained MIDI access');
+            logger.log('# inputs: ' + midiAccess.inputs.size);
             midiAccess.inputs.forEach(function (inputPort) {
                 logPort(inputPort, 'Found');
                 onInput(inputPort, true);
             });
-            log('# outputs: ' + midiAccess.outputs.size);
+            logger.log('# outputs: ' + midiAccess.outputs.size);
             midiAccess.outputs.forEach(function (outputPort) {
                 logPort(outputPort, 'Found');
                 onOutput(outputPort, true);
@@ -134,8 +129,8 @@ function initialize(onInput: InputHandler, onOutput: OutputHandler): Promise<voi
                 return false;
             };
         }, function (e) {
-            log('MIDI access denied');
-            log(e.toString());
+            logger.log('MIDI access denied');
+            logger.log(e.toString());
             throw e;
         });
 }
