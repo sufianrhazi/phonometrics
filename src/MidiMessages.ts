@@ -62,23 +62,23 @@ export class MidiMessages {
         if ((msg[0] == 0x90 || msg[0] == 0xb0) && msg[1] == 0x40) {
             if (msg[2] == 0x00) {
                 // If we're not playing a key, and sustain is active, it's a pedal release
-                if (!isEPlaying && isSustainActive) {
+                if (!this.isEPlaying && this.isSustainActive) {
                     msg[0] = 0xb0;
-                    isSustainActive = false;
+                    this.isSustainActive = false;
                 }
-                if (isEPlaying && msg[0] == 0x90) {
-                    isEPlaying = false;
+                if (this.isEPlaying && msg[0] == 0x90) {
+                    this.isEPlaying = false;
                 }
             } else if (msg[2] == 0x7f) {
-                if (isEPlaying) {
+                if (this.isEPlaying) {
                     // Definitely a sustain
                     this.log('Adjusting false key press to sustain pedal down');
-                    isSustainActive = true;
+                    this.isSustainActive = true;
                     msg[0] = 0xb0;
                 } else {
                     this.log('Possibly incorrectly adjusting false key press to sustain pedal down');
                     // Most likely this is a sustain
-                    isSustainActive = true;
+                    this.isSustainActive = true;
                     msg[0] = 0xb0;
                 }
             } else {
@@ -86,7 +86,7 @@ export class MidiMessages {
                     throw new Error("Woah there, there's another hardware bug!");
                 }
                 // We're playing a key
-                isEPlaying = true;
+                this.isEPlaying = true;
             }
         }
         this.log('Message: ' + JSON.stringify(Array.from(msg)) + ' ' + when);
