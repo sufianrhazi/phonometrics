@@ -1,0 +1,53 @@
+# And so it begins 2017-05-04
+
+Users:
+
+* A _listener_ is a user who is viewing/playing MIDI by other _author_s
+* An _author_ is a user who is recording/streaming MIDI
+
+Large-granularity user stories:
+
+1. As an _author_, I should be able to record a MIDI session with my MIDI device(s)
+2. As an _author_ or a _listener_, I should be able to play back a previously recorded or live streamed MIDI session on my MIDI device(s) or my computer
+3. As an _author_ or a _listener_, I should be able to see MIDI playback as a piano roll, music staff, tablature, percussion notation, etc... (need to prioritize)
+3. As an _author_ or a _listener_, I should be able to see a timeline/diary of any user's recorded MIDI
+4. As an _author_ or a _listener_, I should be able to add (personal or public) notes to a range of recorded MIDI
+5. As an _author_ or a _listener_ who has MIDI devices, I should be able to add "patches" which are stateful function transformations on streams of input/output MIDI
+
+Unknowns that need to be taken care of:
+
+* Name & Brand
+* User Experience:
+  * UI Interactions
+  * Visual style (The structure of brutalist minimalism combined with the bright textures of 90s hip hop: balenciaga's website + patterns)
+    * http://www.gettyimages.com/license/490597307
+    * http://www.gettyimages.com/license/673333615
+    * http://www.gettyimages.com/license/116115478
+    * http://www.gettyimages.com/license/534899373
+    * http://www.gettyimages.com/license/585840950
+* Implementation:
+  * Backend (for fun, let's write it in OCaml)
+  * Storage (Postgres + some object store)
+  * Authentication
+* Operations:
+  * Hosting (AWS / Digital Ocean?)
+  * Monitoring (graphs + logging)
+  * Alerting (email)
+* Business model
+  * What is worth paying for? (pay for private?)
+  * Marketing (go cheap: stickers at/around Julliard)
+* Device compatibility
+
+Immediate things to do:
+
+[ ] Frontend for recording/playback
+  [ ] Data model
+    [ ] Research .midi file format
+  [ ] UI Views
+    [ ] Actions (pause, step, rewind, fast-forward, play, stop, rec)
+    [ ] Input device selection
+    [ ] Output device selection
+    [ ] Visualiation
+      [ ] Written (debug) log
+      [ ] Piano Roll
+      [ ] Rastrum (staff)
