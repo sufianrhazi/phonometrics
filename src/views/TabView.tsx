@@ -28,18 +28,32 @@ export class TabView extends React.Component<TabViewProps, TabViewState> {
         });
     }
 
+    private setTab(tab: ActiveTab) {
+        this.setState({
+            activeTab: tab
+        });
+    }
+
     public render(): JSX.Element {
         return <div className="tab">
             <div className="tab__nav">
-                <button className="tab__nav-btn">Piano Roll</button>
-                <button className="tab__nav-btn tab__nav-btn--is-active">Debug Log</button>
+                <button
+                    disabled={this.state.activeTab === ActiveTab.TabPianoRoll}
+                    className="tab__nav-btn"
+                    onClick={() => this.setTab(ActiveTab.TabPianoRoll)}
+                    >Piano Roll</button>
+                <button
+                    disabled={this.state.activeTab === ActiveTab.TabDebugLog}
+                    className="tab__nav-btn"
+                    onClick={() => this.setTab(ActiveTab.TabDebugLog)}
+                    >Debug Log</button>
             </div>
             <div className="tab__body">
-                <DebugLogView
+                {this.state.activeTab === ActiveTab.TabDebugLog && <DebugLogView
                     debugLevel={this.props.debugLevel}
                     messages={this.props.logMessages}
-                    />
-                <PianoRollView />
+                    />}
+                {this.state.activeTab === ActiveTab.TabPianoRoll && <PianoRollView />}
             </div>
         </div>;
     }
