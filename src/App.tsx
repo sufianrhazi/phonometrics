@@ -1,16 +1,23 @@
 import * as React from "react";
 import * as ReactDOM from "react-dom";
+import { DataModel } from './ApplicationDataModel';
 
-interface HelloWorldProps {
-    name: string;
-}
+/**
+ * [x] MainFrame
+ *   [ ] AudioControls (pause, step, rewind, fast-forward, play, stop, rec)
+ *   [x] Input device selection
+ *   [x] Output device selection
+ *   [ ] Visualiation
+ *     [x] Written (debug) log
+ *     [ ] Piano Roll
+ *     [ ] Rastrum (staff)
+ */
 
-class HelloWorld extends React.Component<HelloWorldProps,undefined> {
-    public render(): JSX.Element {
-        return <h1>Hello, {this.props.name}!</h1>;
-    }
-}
+import { MainFrame } from './views/MainFrame';
 
-export function render(target: HTMLElement): void {
-    ReactDOM.render(<HelloWorld name="Sufian" />, target);
+export async function render(target: HTMLElement): Promise<void> {
+    var model = await DataModel.get();
+    ReactDOM.render(<MainFrame
+        model={model}
+        />, target);
 }

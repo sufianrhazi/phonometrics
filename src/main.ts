@@ -195,7 +195,7 @@ function play(messages: MidiMessages, fakePort: MIDIOutput | null) {
             throw new Error(`This should never happen, lastIndex is null`);
         }
         var delta = now - startTime;
-        log('At ' + delta);
+        logger.log('At ' + delta);
         var toSend = [];
         for (var i = lastIndex; i < messages.length; ++i) {
             var message = messages.get(i);
@@ -208,7 +208,7 @@ function play(messages: MidiMessages, fakePort: MIDIOutput | null) {
                 lastIndex = i + 1;
             }
         }
-        log('Sending ' + JSON.stringify(toSend));
+        logger.log('Sending ' + JSON.stringify(toSend));
         toSend.forEach(function (message) {
             port.send(message.data, now + message.when);
         });

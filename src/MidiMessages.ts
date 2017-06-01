@@ -1,4 +1,4 @@
-interface MidiMessage {
+export interface MidiMessage {
     ms: number;
     us: number;
     data: number[];
