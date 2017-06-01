@@ -6,7 +6,7 @@ function pad(number: number, places: number): string {
 }
 
 function formatDate(date: Date): string {
-    return `${pad(date.getUTCFullYear(), 4)}-${pad(date.getUTCMonth(), 2)}-${pad(date.getUTCDay(), 2)} ${pad(date.getUTCHours(), 2)}:${pad(date.getUTCMinutes(), 2)}:${pad(date.getUTCSeconds(), 2)}.${pad(date.getUTCMilliseconds(), 4)}`;
+    return `${pad(date.getUTCFullYear(), 4)}-${pad(date.getUTCMonth(), 2)}-${pad(date.getUTCDay(), 2)} ${pad(date.getUTCHours(), 2)}:${pad(date.getUTCMinutes(), 2)}:${pad(date.getUTCSeconds(), 2)}.${pad(date.getUTCMilliseconds(), 3)}`;
 }
 
 export enum DebugLevel {
