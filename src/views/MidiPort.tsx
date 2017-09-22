@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { classes } from './react-utils';
 
 export interface MidiPortProps {
     name: string | null;
@@ -11,11 +12,15 @@ export interface MidiPortProps {
 
 export class MidiPort extends React.Component<MidiPortProps,{}> {
     public render() {
-        return <li onClick={this.props.onClick} >
-            <p>{this.props.type} {this.props.isActive ? "ACTIVE" : ""}</p>
-            <p>Name: {this.props.name}</p>
-            <p>Manufacturer: {this.props.manufacturer}</p>
-            <p>State: {this.props.state}</p>
-        </li>
+        var name = this.props.name;
+        if (this.props.manufacturer !== this.props.name) {
+            name = `${this.props.manufacturer} ${this.props.name}`;
+        } else {
+            name = this.props.name
+        }
+        return <li onClick={this.props.onClick} className={classes('device', { "is-active": this.props.isActive })}>
+            <div className="device-type">{this.props.type}</div>
+            <div className="device-name">{name}</div>
+        </li>;
     }
 }

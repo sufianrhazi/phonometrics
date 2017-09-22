@@ -10,6 +10,6 @@ export class Logger {
     public log(msg: string, isImportant: boolean=false): void {
         if (isImportant || IS_DEBUG) {
             this.logEl.textContent = msg + '\n' + this.logEl.textContent;
-        }        
+        }
     }
 }

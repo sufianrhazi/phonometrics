@@ -15,8 +15,8 @@ export class DeviceList extends React.Component<DeviceListProps, {}> {
 
     public render() {
         return <div>
-            <h2>{this.props.type} devices</h2>
-            <ol>
+            <h2>{this.props.type}</h2>
+            <ol className="device-list">
                 {this.props.devices.map(
                     device => <MidiPort
                         name={device.name}

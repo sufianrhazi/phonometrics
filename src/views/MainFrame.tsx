@@ -4,6 +4,7 @@ import { DeviceList } from './DeviceList';
 import { TabView } from './TabView';
 import { DataModel, DebugLevel, LogMessage } from '../ApplicationDataModel';
 import { DebugLogView } from './DebugLogView';
+import { MidiMessage } from '../MidiMessages';
 
 export interface MainFrameProps {
     model: DataModel;
@@ -16,6 +17,7 @@ export interface MainFrameState {
     outputDevice: MIDIOutput | null;
     logLevel: DebugLevel;
     logMessages: LogMessage[];
+    midiMessages: MidiMessage[];
 }
 
 export class MainFrame extends React.Component<MainFrameProps, MainFrameState> {
@@ -117,6 +119,7 @@ export class MainFrame extends React.Component<MainFrameProps, MainFrameState> {
             <TabView
                 debugLevel={DebugLevel.INFO} 
                 logMessages={this.state.logMessages}
+                model={this.props.model}
                 />
         </div>;
     }

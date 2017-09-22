@@ -90,8 +90,10 @@ function listenForEvents(inputPort: MIDIInput) {
                 }
                 var portStr = fmtPort(inputPort);
                 midiMessages.add(timestamp, event.data);
-                var midiData = fmtData(event.data);
-                logger.log(`${portStr} ${midiData} @${timestamp}`, true);
+                if (!(event.data.length === 1 && event.data[0] === 0xfe)) {
+                    var midiData = fmtData(event.data);
+                    //logger.log(`${portStr} ${midiData} @${timestamp}`, true);
+                }
                 return false;
             }
         })

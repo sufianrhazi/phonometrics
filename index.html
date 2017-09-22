@@ -2,6 +2,44 @@
 <html lang="en-US">
     <head>
         <title>Web Midi Test</title>
+        <style>
+body {
+    font-family: "Helvetica", sans-serif;
+    font-size: 17px;
+    line-height: 1em;
+}
+h1,h2,h3,h4,h5,h6 {
+    font-family: "Helvetica", sans-serif;
+    font-size: 17px;
+    line-height: 1em;
+}
+.device-list {
+    display: flex;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.device {
+    display: block;
+    border: 2px #222 solid;
+    color: #ddd;
+    background-color: #333;
+    border-radius: 4px;
+    padding: 1ex;
+    margin-right: 1ex;
+}
+.device.is-active {
+    border-color: #0d0;
+    background-color: #030;
+}
+.device .device-type {
+    text-align: center;
+    font-size: 12px;
+    margin-bottom: 12px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+        </style>
     </head>
     <body>
         <div id="react-start"></div>
@@ -14,6 +52,6 @@
         <textarea id="export" cols="80"></textarea>
         <hr />
         <pre rows="50" cols="80" id="log"></pre>
-        <script src="build/bundle/main.js"></script>
+        <script src="build/browserify/main.js"></script>
     </body>
 </html>

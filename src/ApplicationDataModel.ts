@@ -1,9 +1,6 @@
 import { MidiMessage } from './MidiMessages';
 import { FakeMidiPort } from './fakemidi';
-
-function pad(number: number, places: number): string {
-    return ("0".repeat(places) + number.toString()).slice(-places);
-}
+import { pad } from './strutil';
 
 function formatDate(date: Date): string {
     return `${pad(date.getUTCFullYear(), 4)}-${pad(date.getUTCMonth(), 2)}-${pad(date.getUTCDay(), 2)} ${pad(date.getUTCHours(), 2)}:${pad(date.getUTCMinutes(), 2)}:${pad(date.getUTCSeconds(), 2)}.${pad(date.getUTCMilliseconds(), 3)}`;
@@ -21,6 +18,8 @@ export interface LogMessage {
     message: string;
     level: DebugLevel;
 }
+
+export type DataModelEvent = 'inputDevice' | 'inputDevices' | 'outputDevice' | 'outputDevices' | 'log' | 'midiMessage';
 
 export interface ApplicationState {
     // Audio controls
@@ -46,22 +45,22 @@ export interface ApplicationState {
 export class DataModel {
     public state: ApplicationState;
     private logId: number;
-    private subscribers: ((name: string) => void)[];
+    private subscribers: ((name: DataModelEvent) => void)[];
     private constructor(state: ApplicationState) {
         this.logId = 0;
         this.state = state;
         this.subscribers = [];
     }
     
-    public subscribe(listener: (name: string) => void) {
+    public subscribe(listener: (name: DataModelEvent) => void) {
         this.subscribers.push(listener);
     }
 
-    public unsubscribe(listener: (name: string) => void) {
+    public unsubscribe(listener: (name: DataModelEvent) => void) {
         this.subscribers = this.subscribers.filter(subscriber => subscriber !== listener);
     }
 
-    private dispatch(name: string) {
+    private dispatch(name: DataModelEvent) {
         this.subscribers.forEach(listener => listener(name));
     }
 
